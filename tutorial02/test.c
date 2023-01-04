@@ -70,6 +70,12 @@ static void test_parse_number() {
     TEST_NUMBER(1.234E+10, "1.234E+10");
     TEST_NUMBER(1.234E-10, "1.234E-10");
     TEST_NUMBER(0.0, "1e-10000"); /* must underflow */
+
+
+    //以下为边界值测试
+    TEST_NUMBER(2.2250738585072009E-308, "2.2250738585072009E-308");
+    TEST_NUMBER(1.7976931348623157E308, "1.7976931348623157E308");
+    TEST_NUMBER(1.0000000000000002, "1.0000000000000002");
 }
 
 #define TEST_ERROR(error, json)\
@@ -77,7 +83,7 @@ static void test_parse_number() {
         lept_value v;\
         v.type = LEPT_FALSE;\
         EXPECT_EQ_INT(error, lept_parse(&v, json));\
-        EXPECT_EQ_INT(LEPT_NULL, lept_get_type(&v));\
+        EXPECT_EQ_INT(LEPT_INVALID, lept_get_type(&v));\
     } while(0)
 
 static void test_parse_expect_value() {
@@ -89,7 +95,7 @@ static void test_parse_invalid_value() {
     TEST_ERROR(LEPT_PARSE_INVALID_VALUE, "nul");
     TEST_ERROR(LEPT_PARSE_INVALID_VALUE, "?");
 
-#if 0
+#if 1
     /* invalid number */
     TEST_ERROR(LEPT_PARSE_INVALID_VALUE, "+0");
     TEST_ERROR(LEPT_PARSE_INVALID_VALUE, "+1");
@@ -105,16 +111,16 @@ static void test_parse_invalid_value() {
 static void test_parse_root_not_singular() {
     TEST_ERROR(LEPT_PARSE_ROOT_NOT_SINGULAR, "null x");
 
-#if 0
+#if 1
     /* invalid number */
-    TEST_ERROR(LEPT_PARSE_ROOT_NOT_SINGULAR, "0123"); /* after zero should be '.' , 'E' , 'e' or nothing */
-    TEST_ERROR(LEPT_PARSE_ROOT_NOT_SINGULAR, "0x0");
-    TEST_ERROR(LEPT_PARSE_ROOT_NOT_SINGULAR, "0x123");
+    TEST_ERROR(LEPT_PARSE_INVALID_VALUE, "0123"); /* after zero should be '.' , 'E' , 'e' or nothing */
+    TEST_ERROR(LEPT_PARSE_INVALID_VALUE, "0x0");
+    TEST_ERROR(LEPT_PARSE_INVALID_VALUE, "0x123");
 #endif
 }
 
 static void test_parse_number_too_big() {
-#if 0
+#if 1
     TEST_ERROR(LEPT_PARSE_NUMBER_TOO_BIG, "1e309");
     TEST_ERROR(LEPT_PARSE_NUMBER_TOO_BIG, "-1e309");
 #endif
