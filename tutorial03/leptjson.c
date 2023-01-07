@@ -47,13 +47,16 @@ static void lept_parse_whitespace(lept_context* c) {
     c->json = p;
 }
 
-static int lept_parse_literal(lept_context* c, lept_value* v, const char* literal, lept_type type) {
-    size_t i;
-    EXPECT(c, literal[0]);
-    for (i = 0; literal[i + 1]; i++)
-        if (c->json[i] != literal[i + 1])
+static int lept_parse_literal(lept_context *c, lept_value*v, const char* key,lept_type type) {
+    EXPECT(c, key[0]);
+    if (strlen(c->json) < strlen(key)-1)
+        return LEPT_PARSE_INVALID_VALUE;
+    for (int i = 1; key[i+1];++i) {
+        if (key[i] != c->json[0])
             return LEPT_PARSE_INVALID_VALUE;
-    c->json += i;
+        c->json++;
+    }
+    c->json++;
     v->type = type;
     return LEPT_PARSE_OK;
 }
@@ -94,16 +97,40 @@ static int lept_parse_string(lept_context* c, lept_value* v) {
     for (;;) {
         char ch = *p++;
         switch (ch) {
-            case '\"':
-                len = c->top - head;
-                lept_set_string(v, (const char*)lept_context_pop(c, len), len);
-                c->json = p;
-                return LEPT_PARSE_OK;
-            case '\0':
+        case '\"':
+            len = c->top - head;
+            lept_set_string(v, (const char*)lept_context_pop(c, len), len);
+            c->json = p;
+            return LEPT_PARSE_OK;
+        case '\0':
+            c->top = head;
+            return LEPT_PARSE_MISS_QUOTATION_MARK;
+        case '\\': {
+            switch (*(p++)){
+            case '\"': PUTC(c, '\"'); break;
+            case '\\': PUTC(c, '\\'); break;
+            case '/':  PUTC(c, '/'); break;
+            case 'b':  PUTC(c, '\b'); break;
+            case 'f':  PUTC(c, '\f'); break;
+            case 'n':  PUTC(c, '\n'); break;
+            case 'r':  PUTC(c, '\r'); break;
+            case 't':  PUTC(c, '\t'); break;
+            default: 
                 c->top = head;
-                return LEPT_PARSE_MISS_QUOTATION_MARK;
-            default:
-                PUTC(c, ch);
+                return LEPT_PARSE_INVALID_STRING_ESCAPE;//´íÎóµÄ×ªÒÆ×Ö·û
+            }
+
+            
+        }
+                 break;
+        default: {
+            if (ch < 0x20) {
+                c->top = head;
+                return LEPT_PARSE_INVALID_STRING_CHAR;
+            }
+
+            PUTC(c, ch);
+        }
         }
     }
 }
@@ -131,7 +158,7 @@ int lept_parse(lept_value* v, const char* json) {
     if ((ret = lept_parse_value(&c, v)) == LEPT_PARSE_OK) {
         lept_parse_whitespace(&c);
         if (*c.json != '\0') {
-            v->type = LEPT_NULL;
+            v->type = LEPT_INVALID;
             ret = LEPT_PARSE_ROOT_NOT_SINGULAR;
         }
     }
@@ -151,23 +178,33 @@ lept_type lept_get_type(const lept_value* v) {
     assert(v != NULL);
     return v->type;
 }
-
-int lept_get_boolean(const lept_value* v) {
-    /* \TODO */
-    return 0;
-}
-
 void lept_set_boolean(lept_value* v, int b) {
-    /* \TODO */
+    assert(b == 0 || b == 1);
+    if (b == 0) {
+        v->type = LEPT_FALSE;
+        return;
+    }
+    v->type = LEPT_TRUE;
+    return;
 }
+int lept_get_boolean(const lept_value* v) {
+    assert(v->type == LEPT_FALSE || v->type == LEPT_TRUE);
+    if (v->type == LEPT_FALSE)
+        return 0;
+    return 1;
+}
+
+
 
 double lept_get_number(const lept_value* v) {
     assert(v != NULL && v->type == LEPT_NUMBER);
+
     return v->u.n;
 }
 
 void lept_set_number(lept_value* v, double n) {
-    /* \TODO */
+    v->type = LEPT_NUMBER;
+    v->u.n = n;
 }
 
 const char* lept_get_string(const lept_value* v) {

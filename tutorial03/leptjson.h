@@ -3,7 +3,7 @@
 
 #include <stddef.h> /* size_t */
 
-typedef enum { LEPT_NULL, LEPT_FALSE, LEPT_TRUE, LEPT_NUMBER, LEPT_STRING, LEPT_ARRAY, LEPT_OBJECT } lept_type;
+typedef enum {LEPT_INVALID, LEPT_NULL, LEPT_FALSE, LEPT_TRUE, LEPT_NUMBER, LEPT_STRING, LEPT_ARRAY, LEPT_OBJECT } lept_type;
 
 typedef struct {
     union {
@@ -24,7 +24,7 @@ enum {
     LEPT_PARSE_INVALID_STRING_CHAR
 };
 
-#define lept_init(v) do { (v)->type = LEPT_NULL; } while(0)
+#define lept_init(v) do { (v)->type = LEPT_INVALID; } while(0)
 
 int lept_parse(lept_value* v, const char* json);
 
